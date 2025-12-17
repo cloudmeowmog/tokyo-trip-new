@@ -17,8 +17,6 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); padding-bottom: 20px; }
-        .map-text-shadow { text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; }
-        .metro-station { fill: white; stroke-width: 2; r: 5; }
         
         /* Loading */
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: #f3f4f6; z-index: 9999; transition: opacity 0.5s ease; flex-direction: column;}
@@ -36,7 +34,6 @@
     <div id="root" class="flex-1 flex flex-col h-full"></div>
 
     <script type="text/babel">
-        // 加入 useRef
         const { useState, useEffect, useRef } = React;
 
         // --- 1. 資料區 (Data) ---
@@ -53,18 +50,7 @@
 
         // SVG Maps Data
         const SvgData = {
-            metro: `
-<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(10, 10)"><rect width="130" height="70" fill="rgba(0,0,0,0.7)" rx="5"/><text x="10" y="20" fill="white" font-size="10">🟠 銀座線</text><text x="10" y="35" fill="white" font-size="10">🟢 JR山手線</text><text x="10" y="50" fill="white" font-size="10">🔵 海鷗號</text><text x="10" y="65" fill="white" font-size="10">🔴 淺草線</text></g>
-  <rect x="80" y="150" width="140" height="140" rx="70" fill="none" stroke="#84cc16" stroke-width="8"/>
-  <path d="M 60 380 L 220 150 L 260 150" fill="none" stroke="#f97316" stroke-width="6"/>
-  <path d="M 220 290 L 250 350 L 290 350" fill="none" stroke="#3b82f6" stroke-width="6"/>
-  <circle cx="220" cy="150" r="5" fill="white" stroke="#f97316" stroke-width="2"/><text x="220" y="140" text-anchor="middle" fill="white" font-size="10" font-weight="bold">稻荷町</text>
-  <circle cx="150" cy="150" r="5" fill="#84cc16"/><text x="150" y="140" text-anchor="middle" fill="white" font-size="10">上野</text>
-  <circle cx="220" cy="290" r="5" fill="#84cc16"/><text x="210" y="300" text-anchor="end" fill="white" font-size="10">新橋</text>
-  <circle cx="80" cy="220" r="5" fill="#84cc16"/><text x="70" y="225" text-anchor="end" fill="white" font-size="10">新宿</text>
-  <circle cx="270" cy="350" r="5" fill="white" stroke="#3b82f6" stroke-width="2"/><text x="270" y="370" text-anchor="middle" fill="white" font-size="10">台場</text>
-</svg>`,
+            // metro: data is not used anymore, replaced by note.jpg
             ueno: `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="300" fill="#f0fdf4"/><rect x="20" y="20" width="150" height="180" fill="#bbf7d0" rx="10"/><text x="95" y="110" text-anchor="middle" font-size="14" fill="#166534">上野公園</text><rect x="180" y="100" width="80" height="150" fill="#e5e7eb" stroke="#374151"/><text x="220" y="180" text-anchor="middle" font-size="14">JR 上野站</text><path d="M 190 260 L 190 290" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/><text x="210" y="280" font-size="10">阿美橫丁</text><circle cx="280" cy="150" r="8" fill="#ef4444"/><text x="280" y="170" text-anchor="middle" font-size="10" fill="#ef4444">稻荷町(飯店)</text><path d="M 270 150 L 260 150" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/></svg>`,
             karuizawa: `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="300" fill="#eff6ff"/><rect x="50" y="130" width="200" height="40" fill="#e5e7eb" stroke="#374151"/><text x="150" y="155" text-anchor="middle" font-size="14">輕井澤站</text><rect x="50" y="180" width="200" height="100" fill="#fef08a" rx="10"/><text x="150" y="230" text-anchor="middle" font-size="16" fill="#854d0e">王子 Outlet</text><path d="M 150 130 L 150 50" stroke="#9ca3af" stroke-width="4"/><text x="150" y="40" text-anchor="middle" font-size="12">往 舊輕井澤</text></svg>`,
             odaiba: `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="300" fill="#e0f2fe"/><path d="M 0 100 Q 150 120 300 100 L 300 300 L 0 300 Z" fill="#f3f4f6"/><path d="M 0 150 Q 150 170 300 150" fill="none" stroke="#3b82f6" stroke-width="6" stroke-dasharray="5"/><circle cx="150" cy="160" r="6" fill="white" stroke="#3b82f6" stroke-width="2"/><text x="150" y="180" text-anchor="middle" font-size="10">台場站</text><text x="200" y="220" font-size="30">🤖</text><text x="200" y="250" text-anchor="middle" font-size="12">鋼彈</text><rect x="80" y="190" width="60" height="40" fill="#bae6fd"/><text x="110" y="215" text-anchor="middle" font-size="10">Aqua City</text></svg>`,
@@ -72,26 +58,89 @@
         };
 
         const itinerary = [
-             { day: 1, date: "4/17 (五)", title: "抵達與鈴芽的起點", events: [ { time: "13:25", title: "抵達成田機場", desc: "T2", icon: "✈️", location: "Narita International Airport Terminal 2", hideRoute: true }, { time: "14:30", title: "搭 Skyliner", desc: "往上野", icon: "🚅", location: "Keisei Ueno Station", transport: { route: "機場 → 上野", line: "Skyliner", time: "41分" } }, { time: "16:00", title: "Check-in", desc: "Stayme Ueno", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "上野 → 飯店", line: "計程車", time: "10分" } }, { time: "17:15", title: "往稻荷町站", desc: "步行", icon: "🚶", location: "Inaricho Station", transport: { route: "飯店 → 車站", line: "步行", time: "5分" } }, { time: "17:30", title: "御茶之水 聖橋", desc: "鈴芽場景", icon: "📸", location: "Hijiri-bashi Bridge, Tokyo", transport: { route: "稻荷町 → 御茶之水", line: "銀座線+JR", time: "15分" } }, { time: "18:30", title: "秋葉原", desc: "逛街", icon: "🛍️", location: "Akihabara Station", transport: { route: "御茶之水 → 秋葉原", line: "步行", time: "10分" } }, { time: "20:30", title: "返回飯店", desc: "休息", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "秋葉原 → 飯店", line: "JR+步行", time: "20分" } } ] },
+             { day: 1, date: "4/17 (五)", title: "抵達與鈴芽的起點", events: [ { time: "13:25", title: "抵達成田機場", desc: "T1 (長榮)", icon: "✈️", location: "Narita International Airport Terminal 1", hideRoute: true }, { time: "14:30", title: "搭 Skyliner", desc: "往上野", icon: "🚅", location: "Keisei Ueno Station", transport: { route: "T1 機場站 → 上野", line: "Skyliner", time: "41分" } }, { time: "16:00", title: "Check-in", desc: "Stayme Ueno", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "上野 → 飯店", line: "計程車", time: "10分" } }, { time: "17:15", title: "往稻荷町站", desc: "步行", icon: "🚶", location: "Inaricho Station", transport: { route: "飯店 → 車站", line: "步行", time: "5分" } }, { time: "17:30", title: "御茶之水 聖橋", desc: "鈴芽場景", icon: "📸", location: "Hijiri-bashi Bridge, Tokyo", transport: { route: "稻荷町 → 御茶之水", line: "銀座線+JR", time: "15分" } }, { time: "18:30", title: "秋葉原", desc: "逛街", icon: "🛍️", location: "Akihabara Station", transport: { route: "御茶之水 → 秋葉原", line: "步行", time: "10分" } }, { time: "20:30", title: "返回飯店", desc: "休息", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "秋葉原 → 飯店", line: "JR+步行", time: "20分" } } ] },
              { day: 2, date: "4/18 (六)", title: "台場鋼彈 & 豐洲", events: [ { time: "08:45", title: "往稻荷町站", desc: "出發", icon: "🚶", location: "Inaricho Station", transport: { route: "飯店 → 車站", line: "步行", time: "5分" } }, { time: "09:00", title: "豐洲市場", desc: "早午餐", icon: "🍣", location: "Toyosu Market", transport: { route: "稻荷町 → 豐洲", line: "銀座線+有樂町線", time: "30分" } }, { time: "11:30", title: "往台場", desc: "海鷗號", icon: "🚅", location: "Daiba Station", transport: { route: "豐洲 → 台場", line: "海鷗號", time: "20分" } }, { time: "13:00", title: "獨角獸鋼彈", desc: "變身秀", icon: "🤖", location: "Unicorn Gundam Statue" }, { time: "15:30", title: "teamLab", desc: "需預約", icon: "✨", location: "teamLab Planets TOKYO", transport: { route: "台場 → 新豐洲", line: "海鷗號", time: "23分" } }, { time: "18:00", title: "Kua'Aina", desc: "晚餐", icon: "🍔", location: "Kua Aina Aqua City Odaiba", transport: { route: "新豐洲 → 台場", line: "海鷗號", time: "15分" } }, { time: "20:00", title: "返回飯店", desc: "休息", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "台場 → 稻荷町", line: "海鷗號+銀座線", time: "45分" } } ] },
              { day: 3, date: "4/19 (日)", title: "淺草與晴空塔", events: [ { time: "08:45", title: "往稻荷町站", desc: "出發", icon: "🚶", location: "Inaricho Station", transport: { route: "飯店 → 車站", line: "步行", time: "5分" } }, { time: "09:00", title: "淺草寺", desc: "雷門", icon: "🏮", location: "Senso-ji", transport: { route: "稻荷町 → 淺草", line: "銀座線", time: "3分" } }, { time: "11:00", title: "隅田川步道", desc: "散步", icon: "🚶", location: "Sumida River Walk", transport: { route: "淺草 → 晴空塔", line: "步行", time: "20分" } }, { time: "12:30", title: "晴空塔寶可夢", desc: "4F", icon: "🛍️", location: "Pokemon Center Skytree Town" }, { time: "17:00", title: "利久牛舌", desc: "晚餐", icon: "🍱", location: "Rikyu Skytree" }, { time: "19:00", title: "返回飯店", desc: "回程", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "押上 → 稻荷町", line: "淺草線+銀座線", time: "20分" } } ] },
              { day: 4, date: "4/20 (一)", title: "輕井澤一日遊", events: [ { time: "09:00", title: "往上野站", desc: "搭新幹線", icon: "🚶", location: "Ueno Station", transport: { route: "飯店 → 上野", line: "步行", time: "10分" } }, { time: "10:10", title: "抵達輕井澤", desc: "Outlet", icon: "🛍️", location: "Karuizawa Prince Shopping Plaza", transport: { route: "上野 → 輕井澤", line: "新幹線", time: "60分" } }, { time: "14:00", title: "舊輕井澤", desc: "騎車", icon: "🚲", location: "Kyu-Karuizawa Ginza Street", transport: { route: "車站 → 舊輕井澤", line: "巴士/單車", time: "15分" } }, { time: "17:30", title: "返回上野", desc: "回程", icon: "🚅", location: "Ueno Station", transport: { route: "輕井澤 → 上野", line: "新幹線", time: "60分" } }, { time: "19:00", title: "鴨 to 蔥", desc: "晚餐", icon: "🍜", location: "Kamo to Negi Ueno" }, { time: "20:00", title: "返回飯店", desc: "步行", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "上野 → 飯店", line: "步行", time: "10分" } } ] },
              { day: 5, date: "4/21 (二)", title: "築地・渋谷・新宿", events: [ { time: "08:40", title: "往稻荷町站", desc: "出發", icon: "🚶", location: "Inaricho Station", transport: { route: "飯店 → 車站", line: "步行", time: "5分" } }, { time: "09:00", title: "築地場外市場", desc: "早餐", icon: "🐟", location: "Tsukiji Outer Market", transport: { route: "稻荷町 → 築地", line: "銀座線+日比谷線", time: "20分" } }, { time: "12:00", title: "渋谷 PARCO", desc: "寶可夢", icon: "🎮", location: "Shibuya PARCO", transport: { route: "築地 → 渋谷", line: "日比谷線+銀座線", time: "25分" } }, { time: "15:00", title: "SHIBUYA SKY", desc: "需預約", icon: "🏙️", location: "SHIBUYA SKY" }, { time: "17:30", title: "新宿 3D貓", desc: "東口", icon: "🐈", location: "Cross Shinjuku Vision", transport: { route: "渋谷 → 新宿", line: "山手線", time: "7分" } }, { time: "18:30", title: "哥吉拉", desc: "晚餐", icon: "🦖", location: "Godzilla Head Shinjuku", transport: { route: "新宿 → 歌舞伎町", line: "步行", time: "10分" } }, { time: "20:30", title: "返回飯店", desc: "回程", icon: "🏨", location: HOTEL_ADDRESS, transport: { route: "新宿 → 稻荷町", line: "中央線+銀座線", time: "30分" } } ] },
-             { day: 6, date: "4/22 (三)", title: "返台", events: [ { time: "10:00", title: "Check-out", desc: "阿美橫丁", icon: "🛍️", location: "Ameyoko Shopping Street", transport: { route: "飯店 → 阿美橫丁", line: "步行", time: "10分" } }, { time: "11:30", title: "往機場", desc: "搭 Skyliner", icon: "🚅", location: "Keisei Ueno Station", transport: { route: "京成上野 → 機場", line: "Skyliner", time: "41分" } }, { time: "12:25", title: "抵達機場", desc: "成田 T2", icon: "✈️", location: "Narita Airport Terminal 2" }, { time: "14:25", title: "起飛返台", desc: "長榮 BR197", icon: "✈️", location: "", transport: "" } ] }
+             { day: 6, date: "4/22 (三)", title: "返台", events: [ { time: "10:00", title: "Check-out", desc: "阿美橫丁", icon: "🛍️", location: "Ameyoko Shopping Street", transport: { route: "飯店 → 阿美橫丁", line: "步行", time: "10分" } }, { time: "11:20", title: "往機場", desc: "搭 Skyliner", icon: "🚅", location: "Keisei Ueno Station", transport: { route: "京成上野 → 成田T1", line: "Skyliner", time: "41分" } }, { time: "12:25", title: "抵達機場", desc: "成田 T1 (南翼)", icon: "✈️", location: "Narita Airport Terminal 1" }, { time: "14:25", title: "起飛返台", desc: "長榮 BR197", icon: "✈️", location: "", transport: "" } ] }
         ];
 
+        // Station Guides with Detailed Routes
         const stationGuides = [
-            { id: "narita", name: "成田機場T2", desc: "Skyliner 起點", tips: ["搭車：B1 樓層", "購票：藍色櫃檯"], links: [{ title: "構內圖 (JR東日本)", url: "https://www.jreast.co.jp/e/stations/e611.html" }, { title: "樓層指南 (官網)", url: "https://www.narita-airport.jp/ch2/map/?terminal=2&map=2" }] },
-            { id: "ueno_jr", name: "JR 上野", desc: "往輕井澤", tips: ["新幹線：走中央改札", "月台：地下19-22"], links: [{ title: "JR 構內圖", url: "https://www.jreast.co.jp/estation/stations/204.html" }] },
-            { id: "ueno_metro", name: "銀座線 稻荷町", desc: "最近車站", tips: ["位置：僅樓梯", "標誌：橘色 G"], links: [{ title: "構內圖", url: "https://www.tokyometro.jp/station/inaricho/index.html" }] },
-            { id: "karuizawa", name: "輕井澤", desc: "Outlet", tips: ["Outlet：往南口", "舊輕井澤：往北口"], links: [{ title: "構內圖", url: "https://www.jreast.co.jp/estation/stations/518.html" }] },
-            { id: "shibuya", name: "渋谷", desc: "迷宮", tips: ["銀座線：3F", "八公：1F 改札"], links: [{ title: "立體圖", url: "https://www.tokyometro.jp/station/shibuya/index.html" }] },
-            { id: "shinjuku", name: "新宿", desc: "大迷宮", tips: ["3D貓：東口", "哥吉拉：東口往歌舞伎町"], links: [{ title: "構內圖", url: "https://www.jreast.co.jp/estation/stations/866.html" }] }
+            { 
+                id: "narita", name: "成田機場 T1", desc: "Skyliner 起點站", 
+                tips: ["長榮位於南翼 (South Wing)", "Skyliner 全車對號座"], 
+                routes: [
+                    "入境大廳位於 1F，領完行李後尋找「鐵道」指標",
+                    "搭乘手扶梯下樓至 B1",
+                    "尋找藍色櫃台「KEISEI (京成電鐵)」購票",
+                    "通過橘色剪票口，前往 4 或 5 號月台",
+                    "上車後行李放置於車廂前後的行李架"
+                ],
+                links: [{ title: "T1 樓層圖 (官網)", url: "https://www.narita-airport.jp/ch2/map/?terminal=1&map=1" }] 
+            },
+            { 
+                id: "ueno_keisei", name: "京成上野站", desc: "轉乘與計程車", 
+                tips: ["抵達時在地下月台", "行李多強烈建議搭計程車"], 
+                routes: [
+                    "下車後搭手扶梯往上，尋找「正面口」出口",
+                    "出改札口後直走，不要往地鐵連絡通道走",
+                    "出站到地面，右手邊即是計程車招呼站",
+                    "出示飯店地址給司機 (車程約 5-10 分)"
+                ],
+                links: [{ title: "京成上野構內圖", url: "https://www.keisei.co.jp/keisei/tetudou/stationmap/pdf/us/101.pdf" }] 
+            },
+            { 
+                id: "ueno_jr", name: "JR 上野站", desc: "搭乘新幹線", 
+                tips: ["新幹線入口在站內深處", "必走「中央改札」"], 
+                routes: [
+                    "從地面進入 JR 上野站，請認明最大的「中央改札」",
+                    "進站後抬頭看綠色新幹線標示，直走約 3 分鐘",
+                    "通過第二道「新幹線專用改札」",
+                    "搭乘手扶梯向下至 B3/B4 月台 (通常往輕井澤在 19/20 月台)"
+                ],
+                links: [{ title: "JR 構內圖", url: "https://www.jreast.co.jp/estation/stations/204.html" }] 
+            },
+            { 
+                id: "shibuya", name: "渋谷站", desc: "銀座線動線", 
+                tips: ["銀座線抵達時在 3F", "SHIBUYA SKY 直結"], 
+                routes: [
+                    "銀座線下車後位於 3F，跟隨 Scramble Square 指標",
+                    "SHIBUYA SKY 入口位於該棟大樓 14F (需搭專用電梯)",
+                    "若要看八公/過馬路：從 3F 搭很長的手扶梯下到 1F 廣場",
+                    "避開地下迷宮，盡量走地面或天橋"
+                ],
+                links: [{ title: "立體圖", url: "https://www.tokyometro.jp/station/shibuya/index.html" }] 
+            },
+            { 
+                id: "shinjuku", name: "新宿站", desc: "東口攻略", 
+                tips: ["3D 貓在東口", "歌舞伎町在東口"], 
+                routes: [
+                    "下車後請務必尋找黃色招牌「東改札 (East Exit)」",
+                    "出站後到達地面，會看到一個大廣場",
+                    "3D 貓：往左前方看，大樓頂端的彎曲螢幕即是",
+                    "哥吉拉：沿著東口街道往「歌舞伎町」牌樓走，抬頭看電影院大樓"
+                ],
+                links: [{ title: "JR 新宿構內圖", url: "https://www.jreast.co.jp/estation/stations/866.html" }] 
+            },
+             { 
+                id: "karuizawa", name: "輕井澤站", desc: "南北口區分", 
+                tips: ["南口：Outlet", "北口：舊輕井澤/巴士"], 
+                routes: [
+                    "出改札口後，往右轉是「南口」(Prince Outlet)",
+                    "往左轉是「北口」(往市區/雲場池)",
+                    "主要置物櫃位於 1F (樓梯下方)",
+                    "若租腳踏車，北口出來右手邊有 APA Hotel 旁有店家"
+                ],
+                links: [{ title: "構內圖", url: "https://www.jreast.co.jp/estation/stations/518.html" }] 
+            }
         ];
 
+        // Modified: Fixed Shibuya SKY link and kept Skytree link
         const reservations = [
             { cat: "交通", items: [{ name: "京成 Skyliner", url: "https://www.keisei.co.jp/keisei/tetudou/skyliner/e-ticket/zht/", tips: "線上買便宜" }, { name: "JR 新幹線", url: "https://www.eki-net.com/zh-CHT/jreast-train-reservation/Top/Index", tips: "1個月前預訂" }] },
-            { cat: "景點", items: [{ name: "SHIBUYA SKY", url: "https://www.shibuya-scramble-square.com/sky/ticket/zh_tw/", tips: "4週前必搶" }, { name: "teamLab", url: "https://planets.teamlab.art/tokyo/zh-hant/", tips: "建議提前1個月" }] },
+            { cat: "景點", items: [{ name: "SHIBUYA SKY", url: "https://www.shibuya-scramble-square.com/sky/ticket/", tips: "4週前必搶" }, { name: "東京晴空塔", url: "https://www.tokyo-skytree.jp/cn_t/ticket/", tips: "30天前開放預約" }, { name: "teamLab", url: "https://planets.teamlab.art/tokyo/zh-hant/", tips: "建議提前1個月" }] },
             { cat: "美食", items: [{ name: "Pokemon Cafe", url: "https://www.pokemon-cafe.jp/reservation.html", tips: "31天前搶" }, { name: "挽肉與米", url: "https://www.tablecheck.com/shops/hikinikutocome-shibuya/reserve", tips: "週五早9點搶" }] }
         ];
 
@@ -234,8 +283,12 @@
                             </div>
                         )}
 
-                        {/* 3. 路線指引 (SVG) */}
-                        {mode === 'metro' && <div className="w-full max-w-sm bg-gray-900 rounded-xl overflow-hidden shadow-inner border-2 border-gray-700 p-4" dangerouslySetInnerHTML={{__html: SvgData.metro}} />}
+                        {/* 3. 路線指引 - 改用 note.jpg */}
+                        {mode === 'metro' && (
+                            <div className="w-full max-w-sm bg-white rounded-xl overflow-hidden shadow-inner border-2 border-gray-200 p-0">
+                                <img src="./note.jpg" alt="路線手稿" className="w-full h-auto" />
+                            </div>
+                        )}
 
                         {/* 4. 完整地鐵 - 改用 map.jpg */}
                         {mode === 'full' && (
@@ -253,7 +306,7 @@
             );
         };
 
-        // C. 車站指引 View
+        // C. 車站指引 View - 修改：加入 Routes 顯示
         const StationView = () => (
             <div className="h-full overflow-y-auto p-4 pb-24 space-y-4">
                 <div className="text-center mb-6"><h2 className="text-xl font-bold text-gray-800">車站攻略</h2><p className="text-indigo-600 text-sm">迷路救星</p></div>
@@ -261,8 +314,34 @@
                     <div key={s.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
                         <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><span className="w-2 h-6 bg-indigo-500 rounded-full"></span>{s.name}</h3>
                         <p className="text-sm text-gray-500 mb-4 ml-4">{s.desc}</p>
-                        <div className="space-y-3 mb-4">{s.tips.map((t, idx) => <div key={idx} className="flex gap-3 bg-gray-50 p-3 rounded-lg text-sm"><span className="bg-white text-indigo-600 border border-indigo-100 text-xs font-bold px-2 py-1 h-fit rounded whitespace-nowrap">Tip</span><span className="text-gray-700 leading-relaxed">{t}</span></div>)}</div>
-                        <div className="flex flex-wrap gap-2">{s.links.map((l, idx) => <a key={idx} href={l.url} target="_blank" className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-bold no-underline">🔗 {l.title}</a>)}</div>
+                        
+                        {/* Tips 區塊 */}
+                        <div className="space-y-2 mb-4">
+                            {s.tips.map((t, idx) => (
+                                <div key={idx} className="flex gap-2 bg-gray-50 p-2 rounded-lg text-sm items-center">
+                                    <span className="bg-white text-indigo-600 border border-indigo-100 text-xs font-bold px-2 py-0.5 rounded">Tip</span>
+                                    <span className="text-gray-700">{t}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Routes 詳細路徑區塊 */}
+                        {s.routes && (
+                            <div className="mb-4 bg-indigo-50/50 rounded-xl p-3 border border-indigo-100">
+                                <h4 className="text-xs font-bold text-indigo-800 mb-2 flex items-center gap-1">🚏 導航路徑</h4>
+                                <ul className="relative space-y-3">
+                                    {s.routes.map((step, idx) => (
+                                        <li key={idx} className="text-sm text-gray-700 flex gap-3 relative pl-2">
+                                            {idx !== s.routes.length - 1 && <div className="absolute left-[9px] top-5 bottom-[-12px] w-0.5 bg-indigo-200"></div>}
+                                            <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-500 text-white text-[10px] flex items-center justify-center font-bold mt-0.5">{idx + 1}</div>
+                                            <span className="leading-snug">{step}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">{s.links.map((l, idx) => <a key={idx} href={l.url} target="_blank" className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded-full font-bold no-underline transition-colors">🔗 {l.title}</a>)}</div>
                     </div>
                 ))}
             </div>
